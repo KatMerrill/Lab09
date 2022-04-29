@@ -31,30 +31,55 @@ public class Sprite extends RectF {
     public void update(Canvas canvas) {
         // moves sprite
         offset(dX, dY);
-        // checks bounds - if at edge, reverses the direction
-        if(top < 0 || bottom > canvas.getHeight()) {
-            dY *= -2;
-            dX /= 2;
-        }
-        if(left < 0 || right > canvas.getWidth()) {
-            dX *= -2;
-            dY /= 2;
+        // checks bounds - if at edge, reverses the direction and swaps magnitudes
+        if(top < 0 || bottom > canvas.getHeight() || left < 0 || right > canvas.getWidth()) {
+            if(top < 0 || bottom > canvas.getHeight())
+                dY *= -1;
+            if(left < 0 || right > canvas.getWidth())
+                dX *= -1;
+            // regardless of direction, switches magnitude of x and y
+            int yMag = Math.abs(dY);
+            int xMag = Math.abs(dX);
+            int yDir = 1, xDir = 1;
+            if(dY < 0)
+                yDir = -1;
+            if(dX < 0)
+                xDir = -1;
+            dY = yDir * xMag;
+            dX = xDir * yMag;
+            // checks that sprite never leaves the boundaries
+            if(left < 0) {
+                offsetTo(0, top);
+            }
+            if(right > canvas.getWidth()) {
+                offsetTo(canvas.getWidth() - width(), top);
+            }
+            if(top < 0) {
+                offsetTo(left, 0);
+            }
+            if(bottom > canvas.getHeight()) {
+                offsetTo(left,canvas.getHeight() - height());
+            }
         }
         // sets the frame of the animation to the next (making the character appear to walk)
-        if(top % 15 == 0)  // changes for every 3rd pixel it moves to avoid changing too quickly
+        if(top % 15 == 0)  // changes for every xth pixel it moves to avoid changing too quickly
             anim_frame = (anim_frame + 1) % BMP_COLS;
         // sets the "direction of walking", aka which row of the character sheet is displayed
         if(Math.abs(dX) > Math.abs(dY)) {
-            if(dX > 0)
+            if(dX > 0) {
                 direction = 2; // right
-            else
+            }
+            else{
                 direction = 1; // left
+            }
         }
         else {
-            if(dY > 0)
+            if(dY > 0) {
                 direction = 0; // down/toward viewer
-            else
+            }
+            else {
                 direction = 3; // back/away from viewer
+            }
         }
     }
 
@@ -96,6 +121,28 @@ public class Sprite extends RectF {
 
     public void setColor(int color) {
         this.color = color;
+    }
+
+    // returns the direction that sprite must go to avoid collision
+    public int intersects_horiz(Sprite other) {
+        if(RectF.intersects(this, other)){
+            if(other.left < right && right < other.right)
+                return -1;
+            if(other.left < left && left < other.right)
+                return 1;
+        }
+        return 0;
+
+    }
+    public int intersects_vert(Sprite other) {
+        if(RectF.intersects(this, other)){
+            if(other.top < bottom && bottom < other.bottom)
+                return -1;
+            if(other.top < top && top < other.bottom) {
+                return 1;
+            }
+        }
+        return 0;
     }
 
     public Bitmap getBitmap() {
